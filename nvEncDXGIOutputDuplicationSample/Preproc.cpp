@@ -59,11 +59,11 @@ HRESULT RGBToNV12::Init()
 /// Release all Resources
 void RGBToNV12::Cleanup()
 {
-    for (auto& it : viewMap)
-    {
-        ID3D11VideoProcessorOutputView* pVPOV = it.second;
-        pVPOV->Release();
-    }
+    //for (auto& it : viewMap)
+    //{
+    //    ID3D11VideoProcessorOutputView* pVPOV = it.second;
+    //    pVPOV->Release();
+    //}
     SAFE_RELEASE(m_pVP);
     SAFE_RELEASE(m_pVPEnum);
     SAFE_RELEASE(m_pVidCtx);
@@ -131,20 +131,21 @@ HRESULT RGBToNV12::Convert(ID3D11Texture2D* pRGB, ID3D11Texture2D*pYUV)
     }
 
     /// Obtain Video Processor Output view from output texture
-    ID3D11VideoProcessorOutputView* pVPOV = nullptr;
+    Microsoft::WRL::ComPtr<ID3D11VideoProcessorOutputView> pVPOV = nullptr;
     auto it = viewMap.find(pYUV);
     /// Optimization: Check if we already created a video processor output view for this texture
     if (it == viewMap.end())
     {
         /// We don't have a video processor output view for this texture, create one now.
         D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC ovD = { D3D11_VPOV_DIMENSION_TEXTURE2D };
-        hr = m_pVid->CreateVideoProcessorOutputView(pYUV, m_pVPEnum, &ovD, &pVPOV);
+        hr = m_pVid->CreateVideoProcessorOutputView(pYUV, m_pVPEnum, &ovD, pVPOV.ReleaseAndGetAddressOf());
         if (FAILED(hr))
         {
             SAFE_RELEASE(pVPIn);
             PRINTERR(hr, "CreateVideoProcessorOutputView");
             return hr;
         }
+
         viewMap.insert({ pYUV, pVPOV });
     }
     else
@@ -156,7 +157,7 @@ HRESULT RGBToNV12::Convert(ID3D11Texture2D* pRGB, ID3D11Texture2D*pYUV)
     D3D11_VIDEO_PROCESSOR_STREAM stream = { TRUE, 0, 0, 0, 0, nullptr, pVPIn, nullptr };
 
     /// Perform the Colorspace conversion
-    hr = m_pVidCtx->VideoProcessorBlt(m_pVP, pVPOV, 0, 1, &stream);
+    hr = m_pVidCtx->VideoProcessorBlt(m_pVP, pVPOV.Get(), 0, 1, &stream);
     if (FAILED(hr))
     {
         SAFE_RELEASE(pVPIn);

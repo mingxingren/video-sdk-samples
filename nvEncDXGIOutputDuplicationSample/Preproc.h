@@ -30,6 +30,7 @@
 #include <dxgi1_2.h>
 #include <d3d11_2.h>
 #include <unordered_map>
+#include <wrl/client.h>
 using namespace std;
 
 class RGBToNV12
@@ -54,7 +55,7 @@ private:
     ID3D11VideoProcessorEnumerator* m_pVPEnum = nullptr;
     /// Mapping of Texture2D handle and corresponding Video Processor output view handle
     /// Optimization to avoid having to create video processor output views in each Convert() call
-    std::unordered_map<ID3D11Texture2D*, ID3D11VideoProcessorOutputView*> viewMap;
+    std::unordered_map<ID3D11Texture2D*, Microsoft::WRL::ComPtr<ID3D11VideoProcessorOutputView>> viewMap;
     /// Input and Output Texture2D properties.
     /// Required to optimize Video Processor stream usage
     D3D11_TEXTURE2D_DESC m_inDesc = { 0 };
