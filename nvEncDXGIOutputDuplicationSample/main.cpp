@@ -26,10 +26,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <chrono>
 #include "Defs.h"
 #include "DDAImpl.h"
 #include "Preproc.h"
 #include "NvEncoder/NvEncoderD3D11.h"
+
+using namespace std::chrono;
 
 class DemoApplication
 {
@@ -135,7 +138,7 @@ private:
             DWORD w = bNoVPBlt ? pDDAWrapper->getWidth() : encWidth; 
             DWORD h = bNoVPBlt ? pDDAWrapper->getHeight() : encHeight;
             NV_ENC_BUFFER_FORMAT fmt = bNoVPBlt ? NV_ENC_BUFFER_FORMAT_ARGB : NV_ENC_BUFFER_FORMAT_NV12;
-            pEnc = new NvEncoderD3D11(pD3DDev, w, h, fmt);
+            pEnc = new NvEncoderD3D11(pD3DDev, w, h, fmt, 0);
             if (!pEnc)
             {
                 returnIfError(E_FAIL);
@@ -148,7 +151,7 @@ private:
             encInitParams.encodeHeight = h;
             encInitParams.maxEncodeWidth = pDDAWrapper->getWidth();
             encInitParams.maxEncodeHeight = pDDAWrapper->getHeight();
-            encConfig.gopLength = 5;
+            encInitParams.encodeConfig->rcParams.averageBitRate = 10000000;
 
             try
             {
@@ -392,6 +395,9 @@ int Grab60FPS(int nFrames)
                 /// Get a frame from DDA
                 Demo.Capture(wait);
             }
+
+            time_point<high_resolution_clock> start_time = high_resolution_clock::now();
+
             RESET_WAIT_TIME(start, end, interval, freq);
             /// Preprocess for encoding
             hr = Demo.Preproc(); 
@@ -406,6 +412,9 @@ int Grab60FPS(int nFrames)
                 printf("Encode failed with error 0x%08x\n", hr);
                 return -1;
             }
+
+            int64_t cost_time = duration_cast<chrono::milliseconds>(high_resolution_clock::now() - start_time).count();
+            printf("##################frame num: %d, encode cost time: %d\n", capturedFrames, cost_time);
             capturedFrames++;
         }
     } while (capturedFrames <= nFrames);
@@ -476,7 +485,13 @@ int main(int argc, char** argv)
     }
     printf(" DXGIOUTPUTDuplication_NVENC_Demo: Frames to Capture: %d.\n", nFrames);
 
+    time_point<high_resolution_clock> start_time = high_resolution_clock::now();
+
     /// Kick off the demo
     ret = Grab60FPS(nFrames);
+
+    int64_t cost_time = duration_cast<chrono::milliseconds>(high_resolution_clock::now() - start_time).count();
+    float fps = (float)nFrames / cost_time * 1000;
+    printf(" ##########################cost time: %d   fps: %d \n", cost_time, (int)fps);
     return ret;
 }
