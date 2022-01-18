@@ -351,7 +351,7 @@ int Grab60FPS(int nFrames)
     QueryPerformanceCounter(&end);                          \
     interval.QuadPart = end.QuadPart - start.QuadPart;      \
     MICROSEC_TIME(interval, freq);                          \
-    wait = (int)(WAIT_BASE - (interval.QuadPart * 1000));
+    wait = (int)(WAIT_BASE - (interval.QuadPart / 1000));
 
     /// Initialize Demo app
     hr = Demo.Init();
